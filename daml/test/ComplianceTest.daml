@@ -1,0 +1,52 @@
+module ComplianceTest where
+
+import Compliance.KYC
+import Compliance.AML
+import Compliance.ComplianceGate
+import Daml.Script
+
+complianceTests : Script ()
+complianceTests = do
+  issuer   <- allocateParty "Issuer"
+  alice    <- allocateParty "Alice"
+  operator <- allocateParty "Operator"
+
+  now <- getTime
+
+  -- KYC flow
+  kycCid <- submit issuer $ createCmd KYCCredential with
+    issuer    = issuer
+    subject   = alice
+    status    = Pending
+    expiresAt = now
+    tier      = "retail"
+
+  approved <- submit issuer $ exerciseCmd kycCid Approve with
+    newExpiry = now
+
+  valid <- submit alice $ exerciseCmd approved VerifyStatus
+  assert valid
+
+  -- AML flow
+  amlCid <- submit operator $ createCmd AMLScreen with
+    screener   = operator
+    subject    = alice
+    riskLevel  = Low
+    reasons    = []
+    screenedAt = now
+
+  allowed <- submit alice $ exerciseCmd amlCid IsAllowed
+  assert allowed
+
+  -- Gate check
+  gate <- submit operator $ createCmd ComplianceGate with
+    operator      = operator
+    kycRequired   = True
+    amlRequired   = True
+    allowedTiers  = ["retail"]
+
+  result <- submit operator $ exerciseCmd gate CheckCompliance with
+    subject  = alice
+    kycCid   = Some approved
+    amlCid   = Some amlCid
+  assert result
