@@ -1,0 +1,28 @@
+module Compliance.AML where
+
+data RiskLevel = Low | Medium | High | Blocked
+  deriving (Eq, Show)
+
+template AMLScreen
+  with
+    screener  : Party
+    subject   : Party
+    riskLevel : RiskLevel
+    reasons   : [Text]
+    screenedAt: Time
+  where
+    signatory screener
+    observer  subject
+
+    choice UpdateRisk : ContractId AMLScreen
+      with newLevel : RiskLevel; newReasons : [Text]
+      controller screener
+      do
+        now <- getTime
+        create this with riskLevel = newLevel,
+                         reasons   = newReasons,
+                         screenedAt = now
+
+    nonconsuming choice IsAllowed : Bool
+      controller subject
+      do return (riskLevel /= Blocked)
