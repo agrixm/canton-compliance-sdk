@@ -1,0 +1,11 @@
+sdk-version: 2.9.0
+name: canton-compliance-sdk
+version: 0.1.0
+source: daml
+build-options:
+  - --ghc-option=-Werror
+dependencies:
+  - daml-prim
+  - daml-stdlib
+sandbox-options:
+  - --wall-clock-time
