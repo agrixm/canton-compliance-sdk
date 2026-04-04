@@ -5,11 +5,12 @@ data RiskLevel = Low | Medium | High | Blocked
 
 template AMLScreen
   with
-    screener  : Party
-    subject   : Party
-    riskLevel : RiskLevel
-    reasons   : [Text]
-    screenedAt: Time
+    screener       : Party
+    subject        : Party
+    riskLevel      : RiskLevel
+    reasons        : [Text]
+    screenedAt     : Time
+    velocityLimit  : Decimal   -- max daily transaction amount
   where
     signatory screener
     observer  subject
@@ -26,3 +27,8 @@ template AMLScreen
     nonconsuming choice IsAllowed : Bool
       controller subject
       do return (riskLevel /= Blocked)
+
+    nonconsuming choice CheckVelocity : Bool
+      with amount : Decimal
+      controller screener
+      do return (amount <= velocityLimit && riskLevel /= Blocked)
