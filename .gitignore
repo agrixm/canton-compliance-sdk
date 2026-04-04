@@ -1,0 +1,8 @@
+.daml/
+dist/
+node_modules/
+*.js.map
+.env
+*.log
+__pycache__/
+.DS_Store
