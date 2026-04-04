@@ -1,0 +1,26 @@
+module Compliance.TravelRule where
+
+template TravelRuleMessage
+  with
+    sendingVASP   : Party
+    receivingVASP : Party
+    originatorName: Text
+    originatorAccount: Text
+    beneficiaryName: Text
+    beneficiaryAccount: Text
+    amount        : Decimal
+    currency      : Text
+  where
+    signatory sendingVASP
+    observer  receivingVASP
+
+    ensure amount > 0.0
+
+    choice Acknowledge : ContractId TravelRuleMessage
+      controller receivingVASP
+      do create this
+
+    choice Reject : ()
+      with reason : Text
+      controller receivingVASP
+      do return ()
