@@ -1,0 +1,36 @@
+module Compliance.KYC where
+
+data KYCStatus = Pending | Approved | Rejected | Expired
+  deriving (Eq, Show)
+
+template KYCCredential
+  with
+    issuer    : Party
+    subject   : Party
+    status    : KYCStatus
+    expiresAt : Time
+    tier      : Text   -- "retail", "institutional", "professional"
+  where
+    signatory issuer
+    observer  subject
+
+    ensure status /= Rejected
+
+    choice Approve : ContractId KYCCredential
+      with newExpiry : Time
+      controller issuer
+      do create this with status = Approved, expiresAt = newExpiry
+
+    choice Reject : ContractId KYCCredential
+      controller issuer
+      do create this with status = Rejected
+
+    choice Expire : ()
+      controller issuer
+      do return ()
+
+    nonconsuming choice VerifyStatus : Bool
+      controller subject
+      do
+        now <- getTime
+        return (status == Approved && now < expiresAt)
