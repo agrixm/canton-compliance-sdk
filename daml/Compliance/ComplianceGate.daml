@@ -1,0 +1,28 @@
+module Compliance.ComplianceGate where
+
+import Compliance.KYC
+import Compliance.AML
+
+template ComplianceGate
+  with
+    operator  : Party
+    kycRequired: Bool
+    amlRequired: Bool
+    allowedTiers: [Text]
+  where
+    signatory operator
+
+    nonconsuming choice CheckCompliance : Bool
+      with
+        subject  : Party
+        kycCid   : Optional (ContractId KYCCredential)
+        amlCid   : Optional (ContractId AMLScreen)
+      controller operator
+      do
+        kycOk <- case kycCid of
+          None    -> return (not kycRequired)
+          Some cid -> exercise cid VerifyStatus
+        amlOk <- case amlCid of
+          None    -> return (not amlRequired)
+          Some cid -> exercise cid IsAllowed
+        return (kycOk && amlOk)
